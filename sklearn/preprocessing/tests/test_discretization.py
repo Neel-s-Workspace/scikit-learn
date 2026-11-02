@@ -267,6 +267,28 @@ def test_same_min_max(strategy):
     assert_array_equal(Xt[:, 0], np.zeros(X.shape[0]))
 
 
+@pytest.mark.parametrize("encode", ["ordinal", "onehot", "onehot-dense"])
+@pytest.mark.parametrize("strategy", ["quantile", "kmeans"])
+def test_kbins_discretizer_near_constant_feature(encode, strategy):
+    # Regression test for BUG-003: near-constant features where bin width <= 1e-8
+    X = np.array([[1.0, 0.0], [1.0 + 1e-10, 1.0], [1.0 + 2e-10, 2.0]])
+    est = KBinsDiscretizer(n_bins=3, encode=encode, strategy=strategy)
+    warning_message = "Bins whose width are too small"
+    with pytest.warns(UserWarning, match=warning_message):
+        est.fit(X)
+    assert est.n_bins_[0] == 1
+    Xt = est.transform(X)
+    if encode == "onehot":
+        assert Xt[:, 0].toarray().shape[1] == 1
+        assert_array_equal(Xt[:, 0].toarray().ravel(), np.ones(3))
+    elif encode == "onehot-dense":
+        assert_array_equal(Xt[:, 0], np.ones(3))
+    else:
+        assert_array_equal(Xt[:, 0], np.zeros(3))
+    # inverse_transform should not raise IndexError
+    est.inverse_transform(Xt)
+
+
 def test_transform_1d_behavior():
     X = np.arange(4)
     est = KBinsDiscretizer(n_bins=2, quantile_method="averaged_inverted_cdf")

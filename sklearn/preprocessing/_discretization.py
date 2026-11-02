@@ -381,7 +381,11 @@ class KBinsDiscretizer(TransformerMixin, BaseEstimator):
                         "1e-8) in feature %d are removed. Consider "
                         "decreasing the number of bins." % jj
                     )
-                    n_bins[jj] = len(bin_edges[jj]) - 1
+                    if len(bin_edges[jj]) < 2:
+                        bin_edges[jj] = np.array([-np.inf, np.inf])
+                        n_bins[jj] = 1
+                    else:
+                        n_bins[jj] = len(bin_edges[jj]) - 1
 
         self.bin_edges_ = bin_edges
         self.n_bins_ = n_bins
