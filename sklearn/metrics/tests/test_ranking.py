@@ -45,6 +45,7 @@ from sklearn.utils._testing import (
     assert_almost_equal,
     assert_array_almost_equal,
     assert_array_equal,
+    skip_if_array_api_compat_not_configured,
 )
 from sklearn.utils.extmath import softmax
 from sklearn.utils.fixes import CSR_CONTAINERS
@@ -2649,3 +2650,22 @@ def test_confusion_matrix_at_thresholds_positional_args_deprecation():
     y_score = np.array([0.2, 0.1, 0.7, 0.7])
     with pytest.warns(FutureWarning, match="Pass pos_label=None as keyword arg"):
         confusion_matrix_at_thresholds(y_true, y_score, None)
+
+
+@skip_if_array_api_compat_not_configured
+def test_det_curve_array_api():
+    # Regression test for BUG-005: det_curve with Array API and drop_intermediate=True
+    xp, device = _array_api_for_tests("array_api_strict")
+    from sklearn import config_context
+
+    y_true = xp.asarray([1, 0, 0], device=device)
+    y_score = xp.asarray([0.0, 0.5, 1.0], device=device)
+    with config_context(array_api_dispatch=True):
+        fpr, fnr, thresholds = det_curve(y_true, y_score, drop_intermediate=True)
+    assert fpr.shape[0] == 3
+    assert fnr.shape[0] == 3
+    assert thresholds.shape[0] == 3
+    fpr_np = move_to(fpr, xp=np, device="cpu")
+    fnr_np = move_to(fnr, xp=np, device="cpu")
+    assert_allclose(fpr_np, [1.0, 1.0, 0.0])
+    assert_allclose(fnr_np, [0.0, 1.0, 1.0])

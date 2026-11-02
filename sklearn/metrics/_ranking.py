@@ -411,18 +411,22 @@ def det_curve(
     thresholds = xp.astype(thresholds, _max_precision_float_dtype(xp, device))
     thresholds = xp.concat((xp.asarray([xp.inf], device=device), thresholds))
 
-    if drop_intermediate and len(fps) > 2:
+    if drop_intermediate and fps.shape[0] > 2:
         # Drop thresholds where true positives (tp) do not change from the
         # previous or subsequent threshold. As tp + fn, is fixed for a dataset,
         # this means the false negative rate (fnr) remains constant while the
         # false positive rate (fpr) changes, producing horizontal line segments
         # in the transformed (normal deviate) scale. These intermediate points
         # can be dropped to create lighter DET curve plots.
-        optimal_idxs = xp.where(
+        optimal_idxs = xp.nonzero(
             xp.concat(
                 [
                     xp.asarray([True], device=device),
-                    xp.logical_or(xp.diff(tps[:-1]), xp.diff(tps[1:])),
+                    # Array API spec recommends `logical_or` only accepts bool input
+                    xp.logical_or(
+                        xp.astype(xp.diff(tps[:-1]), xp.bool),
+                        xp.astype(xp.diff(tps[1:]), xp.bool),
+                    ),
                     xp.asarray([True], device=device),
                 ]
             )
