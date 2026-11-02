@@ -121,8 +121,10 @@ def _grid_from_X(X, percentiles, is_categorical, grid_resolution, custom_values)
             # Use values in the custom range
             axis = custom_values[feature]
         else:
+            col = _safe_indexing(X, feature, axis=1)
+            col = col.toarray().ravel() if sparse.issparse(col) else col
             try:
-                uniques = np.unique(_safe_indexing(X, feature, axis=1))
+                uniques = np.unique(col)
             except TypeError as exc:
                 # `np.unique` will fail in the presence of `np.nan` and `str` categories
                 # due to sorting. Temporary, we reraise an error explaining the problem.

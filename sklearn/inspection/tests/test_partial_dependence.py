@@ -1285,3 +1285,22 @@ def test_partial_dependence_empty_categorical_features():
         partial_dependence(
             estimator=clf, X=iris.data, features=[0], categorical_features=[]
         )
+
+
+def test_partial_dependence_sparse():
+    # Regression test for BUG-004: partial dependence with sparse matrix
+    pytest.importorskip("matplotlib")
+    import scipy.sparse as sp
+    from sklearn.inspection import PartialDependenceDisplay
+
+    X_sparse = sp.csr_matrix(iris.data)
+    clf = LogisticRegression(random_state=0).fit(X_sparse, iris.target)
+    pdp = partial_dependence(clf, X_sparse, features=[0], grid_resolution=5)
+    assert pdp["average"].shape == (3, 5)
+    assert len(pdp["grid_values"][0]) == 5
+
+    disp = PartialDependenceDisplay.from_estimator(
+        clf, X_sparse, features=[0], grid_resolution=5, target=0
+    )
+    assert 0 in disp.deciles
+    assert len(disp.deciles[0]) == 9

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
+from scipy.sparse import issparse
 
 from sklearn.utils._array_api import (
     _find_matching_floating_dtype,
@@ -29,7 +30,11 @@ def _nanquantile(X, feature, quantiles):
     quantiles : ndarray of shape (n_quantiles,)
         The computed quantiles.
     """
-    column = np.asarray(_safe_indexing(X, feature, axis=1))
+    col = _safe_indexing(X, feature, axis=1)
+    if issparse(col):
+        column = col.toarray().ravel()
+    else:
+        column = np.asarray(col).ravel()
     if column.dtype == bool:
         # `np.nanquantile` does not support boolean arrays.
         column = column.astype(np.float64)

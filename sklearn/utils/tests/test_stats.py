@@ -551,3 +551,16 @@ def test_nanquantile_boolean_column():
     X = np.array([[True], [False], [True], [False]])
     quantiles = _nanquantile(X, 0, (0.0, 1.0))
     assert_allclose(quantiles, [0.0, 1.0])
+
+
+@pytest.mark.parametrize("sparse_format", ["csr_matrix", "csc_matrix", "csr_array"])
+def test_nanquantile_sparse(sparse_format):
+    """Check that _nanquantile handles scipy sparse matrices and arrays."""
+    import scipy.sparse as sp
+
+    sparse_cls = getattr(sp, sparse_format, None)
+    if sparse_cls is None:
+        pytest.skip(f"{sparse_format} not available")
+    X = sparse_cls([[0.0, 1.0], [2.0, 3.0], [4.0, 5.0]])
+    quantiles = _nanquantile(X, 0, (0.0, 0.5, 1.0))
+    assert_allclose(quantiles, [0.0, 2.0, 4.0])
