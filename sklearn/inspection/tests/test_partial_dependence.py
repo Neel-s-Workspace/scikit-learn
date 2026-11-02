@@ -1291,6 +1291,7 @@ def test_partial_dependence_sparse():
     # Regression test for BUG-004: partial dependence with sparse matrix
     pytest.importorskip("matplotlib")
     import scipy.sparse as sp
+
     from sklearn.inspection import PartialDependenceDisplay
 
     X_sparse = sp.csr_matrix(iris.data)
